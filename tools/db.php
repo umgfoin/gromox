@@ -26,10 +26,14 @@ function get_db_connection()
 	if (!isset($db_config['dbname'])) {
 		_log_db("cannot find dbname under [database] in config file");
 	}
-	$db_conn = mysqli_connect($db_config['host'], $db_config['username'], $db_config['password'], $db_config['dbname']);
+	try {
+		$db_conn = mysqli_connect($db_config['host'], $db_config['username'], $db_config['password'], $db_config['dbname']);
+	} catch (Exception $e) {}
+	
 	$e = mysqli_connect_errno();
 	if ($e != 0) {
-		_log_db("Failed to connect to database server: " . $e);
+		#  _log_db("Failed to connect to database server: " . $e);
+		die("Failed to connect to database server: " . $e);
 	}
 	return $db_conn;
 }
