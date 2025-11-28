@@ -22,14 +22,14 @@
 	$_SERVER['REMOTE_USER'] = $argv[1];
 	try {
 		$session = mapi_logon_np($argv[1], 0);
-	} catch (Exception  $e) {
+	} catch (Exception $e) {
 		die("fail to log on the " . $argv[1] . "'s store");
 	}
 	try {
 		$message = mapi_openentry($session, $loc_string);
-	} catch (Exception  $e) {
-		die("Failed to open message " . $argv[2]);
-	}
+	} catch (Exception $e) {}
+	if (!$message)
+                die("Failed to open message " . $argv[2]);
 	$props = mapi_getprops($message, array(PR_MESSAGE_FLAGS));
 	if (empty($props[PR_MESSAGE_FLAGS])) {
 		die("cannot get PR_MESSAGE_FLAGS from message object");
