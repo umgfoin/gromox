@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2020–2026 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -1286,7 +1286,7 @@ static char *cu_get_msg_parent_display(const db_conn &psqlite, uint64_t message_
  * Conversely, writes to PR_SUBJECT are intercepted and split up.
  */
 static bool common_util_get_message_subject(const db_conn &db, cpid_t cpid,
-    uint64_t message_id, proptag_t proptag, void **ppvalue)
+    uint64_t message_id, proptag_t proptag, void **ppvalue) try
 {
 	const char *psubject_prefix, *pnormalized_subject;
 	
@@ -1335,20 +1335,15 @@ static bool common_util_get_message_subject(const db_conn &db, cpid_t cpid,
 			                  S2A(sqlite3_column_text(pstmt, 0)));
 	}
 	own_stmt.finalize();
-	if (pnormalized_subject == nullptr)
-		pnormalized_subject = "";
-	if (psubject_prefix == nullptr)
-		psubject_prefix = "";
-	auto pvalue = cu_alloc<char>(strlen(pnormalized_subject) + strlen(psubject_prefix) + 1);
-	if (pvalue == nullptr)
-		return FALSE;
-	strcpy(pvalue, psubject_prefix);
-	strcat(pvalue, pnormalized_subject);
+	auto pvalue = std::string(znul(psubject_prefix)) + znul(pnormalized_subject);
 	if (PROP_TYPE(proptag) == PT_UNICODE)
 		*ppvalue = common_util_dup(pvalue);
 	else
 		*ppvalue = cu_utf8_to_mb_dup(cpid, pvalue);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	mlog(LV_ERR, "%s: ENOMEM", __func__);
+	return false;
 }
 	
 static bool cu_get_msg_display_recipients(const db_conn &psqlite,
@@ -2032,12 +2027,8 @@ static GP_RESULT gp_msgprop_synth(uint64_t msgid, proptag_t proptag,
 {
 	switch (proptag) {
 	case PR_MESSAGE_CLASS: {
-		auto v = cu_alloc<char>(9);
-		pv.pvalue = v;
-		if (v == nullptr)
-			return GP_ERR;
-		strcpy(v, "IPM.Note");
-		return GP_ADV;
+		pv.pvalue = common_util_dup("IPM.Note");
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
 	case PR_SENDER_ADDRTYPE:
 	case PR_SENT_REPRESENTING_ADDRTYPE: {
@@ -2052,19 +2043,11 @@ static GP_RESULT gp_msgprop_synth(uint64_t msgid, proptag_t proptag,
 		if (val == nullptr)
 			break;
 		if (*val == '/') {
-			auto v = cu_alloc<char>(3);
-			pv.pvalue = v;
-			if (v == nullptr)
-				return GP_ERR;
-			strcpy(v, "EX");
-			return GP_ADV;
+			pv.pvalue = common_util_dup("EX");
+			return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 		} else if (strchr(val, '@') != nullptr) {
-			auto v = cu_alloc<char>(5);
-			pv.pvalue = v;
-			if (v == nullptr)
-				return GP_ERR;
-			strcpy(v, "SMTP");
-			return GP_ADV;
+			pv.pvalue = common_util_dup("SMTP");
+			return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 		}
 		break;
 	}
@@ -2103,13 +2086,9 @@ static GP_RESULT gp_rcptprop_synth(proptag_t proptag, TAGGED_PROPVAL &pv)
 		return GP_ADV;
 	}
 	case PR_ADDRTYPE: {
-		auto v = cu_alloc<char>(5);
-		pv.pvalue = v;
-		if (v == nullptr)
-			return GP_ERR;
-		strcpy(v, "NONE");
 		pv.proptag = CHANGE_PROP_TYPE(pv.proptag, PT_UNICODE);
-		return GP_ADV;
+		pv.pvalue  = common_util_dup("NONE");
+		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
 	default:
 		return GP_UNHANDLED;
@@ -3083,7 +3062,7 @@ BOOL cu_set_properties(mapi_object_type table_type, uint64_t id, cpid_t cpid,
 		return FALSE;
 	switch (table_type) {
 	case MAPI_STORE:
-		strcpy(sql_string, "REPLACE INTO store_properties VALUES (?, ?)");
+		snprintf(sql_string, std::size(sql_string), "REPLACE INTO store_properties VALUES (?, ?)");
 		break;
 	case MAPI_FOLDER:
 		snprintf(sql_string, std::size(sql_string), "REPLACE INTO "

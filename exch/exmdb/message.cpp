@@ -283,7 +283,6 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 {
 	BOOL b_check, b_owner, b_result;
 	uint32_t permission, folder_type;
-	char sql_string[256];
 	
 	auto pdb = db_engine_get_db(dir);
 	if (!pdb)
@@ -325,11 +324,12 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 	bool b_update = true, b_softdel = false;
 	xstmt stm_del;
 	if (!b_copy) {
+		const char *sql_string = nullptr;
 		if (exmdb_server::is_private()) {
-			strcpy(sql_string, "DELETE FROM messages WHERE message_id=?");
+			sql_string = "DELETE FROM messages WHERE message_id=?";
 			b_update = FALSE;
 		} else {
-			strcpy(sql_string, "UPDATE messages SET is_deleted=1 WHERE message_id=?");
+			sql_string = "UPDATE messages SET is_deleted=1 WHERE message_id=?";
 			b_softdel = true;
 		}
 		stm_del = pdb->prep(sql_string);
@@ -416,6 +416,7 @@ BOOL exmdb_server::movecopy_messages(const char *dir, cpid_t cpid, BOOL b_guest,
 		mlog(LV_NOTICE, "exmdb-audit: moved(mmv) message %s:f%llu:m%llu to f%llu:m%llu",
 			dir, LLU{src_val}, LLU{tmp_val}, LLU{dst_val}, LLU{tmp_val1});
 		if (!exmdb_server::is_private()) {
+			char sql_string[63];
 			snprintf(sql_string, std::size(sql_string), "DELETE FROM read_states"
 			         " WHERE message_id=%llu", LLU{tmp_val});
 			if (pdb->exec(sql_string) != SQLITE_OK)
