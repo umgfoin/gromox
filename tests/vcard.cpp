@@ -175,8 +175,10 @@ static int t_ical_api()
 	assert(sec == 0);
 	assert(ical_parse_duration("-P9DT3H4M5S", &sec));
 	assert(sec == -(86400 * 9 + 3600 * 3 + 4 * 60 + 5));
-	assert(!ical_parse_duration("P1M", &sec));
-	assert(!ical_parse_duration("P1Y", &sec));
+	assert(ical_parse_duration("P1M", &sec));
+	assert(sec >= 28 * 86400 && sec <= 86400 * 366 / 12);
+	assert(ical_parse_duration("P1Y", &sec));
+	assert(sec >= 86400 * 365 && sec <= 86400 * 366);
 	/*
 	 * Parser is too lax.
 	//assert(!ical_parse_duration("P", &sec));

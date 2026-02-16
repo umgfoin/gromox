@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2021–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -1042,10 +1042,12 @@ bool ical_parse_byday(const char *pbegin, int *pdayofweek, int *pweekorder)
 
 bool ical_parse_duration(const char *ptoken, long *pseconds)
 {
-	char tmp_buff[128];
-	
 	while (HX_isspace(*ptoken))
 		++ptoken;
+	/*
+	 * Negative durations are typically used to schedule an alarm to
+	 * trigger before an associated time.
+	 */
 	int factor = 1;
 	if ('+' == *ptoken) {
 		ptoken ++;
@@ -1053,76 +1055,11 @@ bool ical_parse_duration(const char *ptoken, long *pseconds)
 		factor = -1;
 		ptoken ++;
 	}
-	if (*ptoken != 'P')
-		return false;
-	ptoken ++;
-
-	bool b_time = false;
-	int week = -1, day = -1, hour = -1, minute = -1, second = -1;
-	gx_strlcpy(tmp_buff, ptoken, std::size(tmp_buff));
-	ptoken = tmp_buff;
-	for (char *ptoken1 = tmp_buff; *ptoken1 != '\0'; ++ptoken1) {
-		switch (*ptoken1) {
-		case 'W':
-			if (ptoken1 == ptoken || week != -1 || b_time)
-				return false;
-			*ptoken1 = '\0';
-			week = strtol(ptoken, nullptr, 0);
-			ptoken = ptoken1 + 1;
-			break;
-		case 'D':
-			if (ptoken1 == ptoken || day != -1 || b_time)
-				return false;
-			*ptoken1 = '\0';
-			day = strtol(ptoken, nullptr, 0);
-			ptoken = ptoken1 + 1;
-			break;
-		case 'T':
-			if (ptoken != ptoken1 || b_time)
-				return false;
-			b_time = TRUE;
-			ptoken = ptoken1 + 1;
-			break;
-		case 'H':
-			if (ptoken1 == ptoken || hour != -1 || !b_time)
-				return false;
-			*ptoken1 = '\0';
-			hour = strtol(ptoken, nullptr, 0);
-			ptoken = ptoken1 + 1;
-			break;
-		case 'M':
-			if (ptoken1 == ptoken || minute != -1 || !b_time)
-				return false;
-			*ptoken1 = '\0';
-			minute = strtol(ptoken, nullptr, 0);
-			ptoken = ptoken1 + 1;
-			break;
-		case 'S':
-			if (ptoken1 == ptoken || second != -1 || !b_time)
-				return false;
-			*ptoken1 = '\0';
-			second = strtol(ptoken, nullptr, 0);
-			ptoken = ptoken1 + 1;
-			break;
-		default:
-			if (!HX_isdigit(*ptoken1))
-				return false;
-			break;
-		}
-	}
-	*pseconds = 0;
-	if (week != -1)
-		*pseconds += 7*24*60*60*week;
-	if (day != -1)
-		*pseconds += 24*60*60*day;
-	if (hour != -1)
-		*pseconds += 60*60*hour;
-	if (minute != -1)
-		*pseconds += 60*minute;
-	if (second != -1)
-		*pseconds += second;
+	char *end = nullptr;
+	*pseconds = std::min(static_cast<unsigned long long>(LONG_MAX),
+	            HX_strtoull8601p_sec(ptoken, &end));
 	*pseconds *= factor;
-	return true;
+	return end != nullptr && end != ptoken && *end == '\0';
 }
 
 static const char *ical_get_datetime_offset(const ical_component &ptz_component,
