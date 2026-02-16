@@ -175,11 +175,7 @@ svc_mgr::~svc_mgr()
 
 bool svc_mgr::library_present(const generic_module &mod)
 {
-	return std::any_of(g_list_plug.cbegin(), g_list_plug.cend(),
-	       [&](const SVC_PLUG_ENTITY &p) {
-	       	return strcmp(p.file_name, znul(mod.file_name)) == 0 ||
-		       p.lib_main == mod.lib_main;
-	       });
+	return std::find(g_list_plug.cbegin(), g_list_plug.cend(), mod) != g_list_plug.cend();
 }
 
 void svc_mgr::insert_library(const generic_module &mod)
@@ -380,6 +376,13 @@ generic_module::generic_module(generic_module &&o) noexcept :
 	init_state(std::move(o.init_state))
 {
 	o.init_state = state::uninit;
+}
+
+bool generic_module::operator==(const generic_module &o) const noexcept
+{
+	return lib_main == o.lib_main ||
+	       (file_name != nullptr && o.file_name != nullptr &&
+	       strcmp(file_name, o.file_name) == 0);
 }
 
 void service_init(service_init_param &&parm)

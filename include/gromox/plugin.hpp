@@ -140,6 +140,7 @@ struct GX_EXPORT generic_module {
 	constexpr generic_module(const char *a, PLUGIN_MAIN b) : file_name(a), lib_main(b) {}
 	generic_module(generic_module &&) noexcept;
 	void operator=(generic_module &&) noexcept = delete;
+	bool operator==(const generic_module &) const noexcept;
 
 	const char *file_name = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
