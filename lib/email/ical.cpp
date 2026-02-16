@@ -1027,7 +1027,7 @@ bool ical_parse_byday(const char *pbegin, int *pdayofweek, int *pweekorder)
 		tmp_num[0] = *pbegin++;
 		if (HX_isdigit(*pbegin))
 			tmp_num[1] = *pbegin++;
-		*pweekorder = strtol(tmp_num, nullptr, 0);
+		*pweekorder = strtol(tmp_num, nullptr, 10);
 		if (*pweekorder < 1 || *pweekorder > 53)
 			return false;
 		if (b_negative)
@@ -1166,7 +1166,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			if (NULL == pvalue2) {
 				month = itime1.month;
 			} else {
-				month = strtol(pvalue2, nullptr, 0);
+				month = strtol(pvalue2, nullptr, 10);
 				if (month < 1 || month > 12)
 					return NULL;
 			}
@@ -1185,7 +1185,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 				dayofmonth = ical_get_dayofmonth(itime.year,
 				             itime.month, weekorder, dayofweek);
 			} else {
-				dayofmonth = strtol(pvalue1, nullptr, 0);
+				dayofmonth = strtol(pvalue1, nullptr, 10);
 				if (abs(dayofmonth) < 1 || abs(dayofmonth) > 31)
 					return NULL;
 				if (dayofmonth < 0)
@@ -1197,7 +1197,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			if (NULL == pvalue) {
 				hour = itime1.hour;
 			} else {
-				hour = strtol(pvalue, nullptr, 0);
+				hour = strtol(pvalue, nullptr, 10);
 				if (hour < 0 || hour > 23)
 					return NULL;
 			}
@@ -1205,7 +1205,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			if (NULL == pvalue) {
 				minute = itime1.minute;
 			} else {
-				minute = strtol(pvalue, nullptr, 0);
+				minute = strtol(pvalue, nullptr, 10);
 				if (minute < 0 || minute > 59)
 					return NULL;
 			}
@@ -1213,7 +1213,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			if (NULL == pvalue) {
 				second = itime1.second;
 			} else {
-				second = strtol(pvalue, nullptr, 0);
+				second = strtol(pvalue, nullptr, 10);
 				if (second < 0 || second > 59)
 					return NULL;
 			}
@@ -1760,7 +1760,7 @@ static long clamp_low_n(const char *s, long def)
 {
 	if (s == nullptr)
 		return def;
-	auto v = strtol(s, nullptr, 0);
+	auto v = strtol(s, nullptr, 10);
 	return v > 0 ? v : INT_MIN;
 }
 
@@ -1804,7 +1804,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbysecond_list) {
 			long tmp_int = LONG_MIN;
 			if (!pnv2.empty())
-				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+				tmp_int = strtol(pnv2.c_str(), nullptr, 10);
 			if (tmp_int < 0 || tmp_int > 59)
 				continue;
 			ical_set_bitmap(pirrule->second_bitmap, tmp_int);
@@ -1818,7 +1818,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbyminute_list) {
 			long tmp_int = LONG_MIN;
 			if (!pnv2.empty())
-				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+				tmp_int = strtol(pnv2.c_str(), nullptr, 10);
 			if (tmp_int < 0 || tmp_int > 59)
 				continue;
 			ical_set_bitmap(pirrule->minute_bitmap, tmp_int);
@@ -1832,7 +1832,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbyhour_list) {
 			long tmp_int = LONG_MIN;
 			if (!pnv2.empty())
-				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+				tmp_int = strtol(pnv2.c_str(), nullptr, 10);
 			if (tmp_int < 0 || tmp_int > 23)
 				continue;
 			ical_set_bitmap(pirrule->hour_bitmap, tmp_int);
@@ -1846,7 +1846,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbymday_list) {
 			long tmp_int = LONG_MIN;
 			if (!pnv2.empty())
-				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+				tmp_int = strtol(pnv2.c_str(), nullptr, 10);
 			if (tmp_int < -31 || 0 == tmp_int || tmp_int > 31)
 				continue;
 			if (tmp_int > 0)
@@ -1863,7 +1863,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbyyday_list) {
 			long tmp_int = LONG_MIN;
 			if (!pnv2.empty())
-				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+				tmp_int = strtol(pnv2.c_str(), nullptr, 10);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366)
 				continue;
 			if (tmp_int > 0)
@@ -1922,7 +1922,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbywnum_list) {
 			long tmp_int = LONG_MIN;
 			if (!pnv2.empty())
-				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+				tmp_int = strtol(pnv2.c_str(), nullptr, 10);
 			if (tmp_int < -53 || 0 == tmp_int || tmp_int > 53)
 				continue;
 			if (tmp_int > 0)
@@ -1939,7 +1939,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *pbymonth_list) {
 			long tmp_int = LONG_MIN;
 			if (!pnv2.empty())
-				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+				tmp_int = strtol(pnv2.c_str(), nullptr, 10);
 			if (tmp_int < 1 || tmp_int > 12)
 				continue;
 			ical_set_bitmap(pirrule->month_bitmap, tmp_int - 1);
@@ -2012,7 +2012,7 @@ const char *ical_parse_rrule(const ical_component *ptz_component,
 		for (const auto &pnv2 : *psetpos_list) {
 			long tmp_int = LONG_MIN;
 			if (!pnv2.empty())
-				tmp_int = strtol(pnv2.c_str(), nullptr, 0);
+				tmp_int = strtol(pnv2.c_str(), nullptr, 10);
 			if (tmp_int < -366 || 0 == tmp_int || tmp_int > 366)
 				continue;
 			if (tmp_int > 0)

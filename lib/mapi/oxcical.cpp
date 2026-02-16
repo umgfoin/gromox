@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2022–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2022–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cassert>
@@ -135,7 +135,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	if (pvalue2 == nullptr) {
 		pdate->month = itime.month;
 	} else {
-		pdate->month = strtol(pvalue2, nullptr, 0);
+		pdate->month = strtol(pvalue2, nullptr, 10);
 		if (pdate->month < 1 || pdate->month > 12)
 			return false;
 	}
@@ -152,7 +152,7 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	} else {
 		pdate->year = 1;
 		pdate->dayofweek = 0;
-		pdate->day = strtol(pvalue1, nullptr, 0);
+		pdate->day = strtol(pvalue1, nullptr, 10);
 		if (abs(pdate->day) < 1 || abs(pdate->day) > 31)
 			return false;
 	}
@@ -327,7 +327,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 			return "E-2804: MAPI does not support RRULE.BYSECOND";
 		pvalue = piline->get_first_subvalue_by_name("BYSECOND");
 		/* Try to cope with idempotent BYSECOND=0 amidst the unsupportedness */
-		if (pvalue != nullptr && strtol(pvalue, nullptr, 0) != start_time % 60)
+		if (pvalue != nullptr && strtol(pvalue, nullptr, 10) != start_time % 60)
 			return "E-2805: MAPI does not support RRULE.BYSECOND";
 	}
 	auto err = ical_parse_rrule(&tzcom, start_time, &piline->value_list, &irrule);
@@ -479,7 +479,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 			 * MAPI does not support "fifth", only 1st/2nd/3rd/4th/last.
 			 * BYSETPOS=-1 bijectively maps from and to order 5 in MAPI.
 			 */
-			int tmp_int = strtol(pvalue, nullptr, 0);
+			int tmp_int = strtol(pvalue, nullptr, 10);
 			if (tmp_int > 4 || tmp_int < -1)
 				return "E-2816: MAPI does not support MONTHLY.BYSETPOS>4";
 			else if (tmp_int == -1)
@@ -516,7 +516,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 				ical_utc_to_datetime(&tzcom, start_time, &itime);
 				tmp_int = itime.day;
 			} else {
-				tmp_int = strtol(pvalue, nullptr, 0);
+				tmp_int = strtol(pvalue, nullptr, 10);
 				if (tmp_int < -1)
 					return "E-2818: bymonthday out of range";
 				else if (tmp_int == -1)
@@ -557,7 +557,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
 			}
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
-			int tmp_int = strtol(pvalue, nullptr, 0);
+			int tmp_int = strtol(pvalue, nullptr, 10);
 			if (tmp_int > 4 || tmp_int < -1)
 				return "E-2821";
 			else if (tmp_int == -1)
@@ -596,7 +596,7 @@ static const char *oxcical_parse_rrule(const ical_component &tzcom,
 				ical_utc_to_datetime(&tzcom, start_time, &itime);
 				tmp_int = itime.day;
 			} else {
-				tmp_int = strtol(pvalue, nullptr, 0);
+				tmp_int = strtol(pvalue, nullptr, 10);
 				if (tmp_int < -1)
 					return "E-2823";
 				else if (tmp_int == -1)
@@ -1392,7 +1392,7 @@ static bool oxcical_parse_sequence(const ical_component &main_event,
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return true;
-	uint32_t tmp_int32 = strtol(pvalue, nullptr, 0);
+	uint32_t tmp_int32 = strtol(pvalue, nullptr, 10);
 	PROPERTY_NAME pn = {MNID_ID, PSETID_Appointment, PidLidAppointmentSequence};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return false;
@@ -1529,7 +1529,7 @@ static bool oxcical_parse_ownerapptid(const ical_component &main_event,
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return true;
-	uint32_t tmp_int32 = strtol(pvalue, nullptr, 0);
+	uint32_t tmp_int32 = strtol(pvalue, nullptr, 10);
 	return pmsg->proplist.set(PR_OWNER_APPT_ID, &tmp_int32) == ecSuccess;
 }
 
@@ -2025,7 +2025,7 @@ static bool oxcical_parse_importance(const ical_component &main_event,
 		auto str = line->get_first_subvalue();
 		if (str == nullptr)
 			return true;
-		uint32_t imp = strtol(str, nullptr, 0);
+		uint32_t imp = strtol(str, nullptr, 10);
 		if (imp <= IMPORTANCE_HIGH &&
 		    msg->proplist.set(PR_IMPORTANCE, &imp) != ecSuccess)
 			return false;
@@ -2041,7 +2041,7 @@ static bool oxcical_parse_importance(const ical_component &main_event,
 	 * RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58.
 	 * (Decidedly different from OXCMAIL's X-Priority.)
 	 */
-	auto v = strtol(str, nullptr, 0);
+	auto v = strtol(str, nullptr, 10);
 	uint32_t imp;
 	if (v >= 1 && v <= 4)
 		imp = IMPORTANCE_HIGH;
