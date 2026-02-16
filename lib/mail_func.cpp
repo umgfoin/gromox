@@ -828,7 +828,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 			last_brace = static_cast<char *>(memchr(ptr + 1, '}', 16));
 			if (last_brace != nullptr) {
 				*last_brace = '\0';
-				int length = strtol(ptr + 1, nullptr, 0);
+				size_t length = strtoul(&ptr[1], nullptr, 10);
 				memmove(ptr, last_brace + 1, cmdline + cmdlen - 1 - last_brace);
 				cmdlen -= last_brace + 1 - ptr;
 				ptr += length;
