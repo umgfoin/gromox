@@ -574,36 +574,6 @@ const std::vector<std::string> *ical_line::get_subval_list(const char *name) con
 }
 
 /**
- * @str_offset: "-HHMM" or "+HHMM"
- *
- * Split str_offset and validate hour/minute pair for being in range.
- */
-bool ical_parse_utc_offset(const char *str_zone, int *phour, int *pminute)
-{
-	int factor;
-	
-	*phour = *pminute = 0;
-	while (HX_isspace(*str_zone))
-		++str_zone;
-	if (*str_zone == '-')
-		factor = 1;
-	else if (*str_zone == '+')
-		factor = -1;
-	else
-		return false;
-	if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
-	    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
-		return false;
-	int hour   = (str_zone[1] - '0') * 10 + (str_zone[2] - '0');
-	int minute = (str_zone[3] - '0') * 10 + (str_zone[4] - '0');
-	if (hour < 0 || hour > 23 || minute < 0 || minute > 59)
-		return false;
-	*phour = factor * hour;
-	*pminute = factor * minute;
-	return true;
-}
-
-/**
  * @str_date: string of the form yyyymmdd
  *
  * Break down input string and assign to ical_time. By virtue of the
@@ -1121,9 +1091,10 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 			pvalue = piline->get_first_subvalue();
 			if (pvalue == nullptr)
 				return NULL;
-			if (!ical_parse_utc_offset(pvalue, &hour, &minute))
+			int west = 0;
+			if (!simple_zone_to_minwest(pvalue, &west, nullptr))
 				return nullptr;
-			tmp_time -= 60*60*hour + 60*minute;
+			tmp_time -= 60 * west;
 			if (gmtime_r(&tmp_time, &tmp_tm) == nullptr)
 				return nullptr;
 			itime2.year = tmp_tm.tm_year + 1900;
@@ -1257,9 +1228,7 @@ static const char *ical_get_datetime_offset(const ical_component &ptz_component,
 bool ical_itime_to_utc(const ical_component *ptz_component,
     ical_time itime, time_t *ptime)
 {
-	int hour_offset;
 	struct tm tmp_tm;
-	int minute_offset;
 	
 	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
 	tmp_tm.tm_min = itime.minute;
@@ -1282,9 +1251,10 @@ bool ical_itime_to_utc(const ical_component *ptz_component,
 	auto str_offset = ical_get_datetime_offset(*ptz_component, itime);
 	if (str_offset == nullptr)
 		return false;
-	if (!ical_parse_utc_offset(str_offset, &hour_offset, &minute_offset))
+	int west = 0;
+	if (!simple_zone_to_minwest(str_offset, &west, nullptr))
 		return false;
-	*ptime += 60*60*hour_offset + 60*minute_offset;
+	*ptime += 60 * west;
 	return true;
 }
 
@@ -1330,9 +1300,6 @@ static bool ical_utc_to_datetime_2(time_t utc_time, ical_time *pitime)
 bool ical_utc_to_datetime(const ical_component *ptz_component,
     time_t utc_time, ical_time *pitime)
 {
-	int hour;
-	int minute;
-	time_t tmp_time;
 	struct tm tmp_tm;
 	const char *pvalue;
 	
@@ -1352,9 +1319,10 @@ bool ical_utc_to_datetime(const ical_component *ptz_component,
 		pvalue = piline->get_first_subvalue();
 		if (pvalue == nullptr)
 			break;
-		if (!ical_parse_utc_offset(pvalue, &hour, &minute))
+		int west = 0;
+		if (!simple_zone_to_minwest(pvalue, &west, nullptr))
 			break;
-		tmp_time = utc_time - 60*60*hour - 60*minute;
+		auto tmp_time = utc_time - 60 * west;
 		if (gmtime_r(&tmp_time, &tmp_tm) == nullptr)
 			break;
 		pitime->year = tmp_tm.tm_year + 1900;

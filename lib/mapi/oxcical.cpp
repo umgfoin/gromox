@@ -68,8 +68,6 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	int32_t *pbias, int32_t *pdaylightbias, int16_t *pyear,
 	SYSTEMTIME *pdate)
 {
-	int hour;
-	int minute;
 	int dayofweek;
 	int weekorder;
 	const char *pvalue;
@@ -83,9 +81,10 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 	pvalue = piline->get_first_subvalue();
 	if (pvalue == nullptr)
 		return false;
-	if (!ical_parse_utc_offset(pvalue, &hour, &minute))
+	int west = 0;
+	if (!simple_zone_to_minwest(pvalue, &west, nullptr))
 		return false;
-	*pbias = 60*hour + minute;
+	*pbias = west;
 	if (strcasecmp(sub.m_name.c_str(), "DAYLIGHT") == 0) {
 		piline = sub.get_line("TZOFFSETFROM");
 		if (piline == nullptr)
@@ -93,10 +92,10 @@ static bool oxcical_parse_vtsubcomponent(const ical_component &sub,
 		pvalue = piline->get_first_subvalue();
 		if (pvalue == nullptr)
 			return false;
-		int fromhour, fromminute;
-		if (!ical_parse_utc_offset(pvalue, &fromhour, &fromminute))
+		int fromwest = 0;
+		if (!simple_zone_to_minwest(pvalue, &west, nullptr))
 			return false;
-		*pdaylightbias = 60 * hour + minute - (60 * fromhour + fromminute);
+		*pdaylightbias = west - fromwest;
 	}
 	piline = sub.get_line("DTSTART");
 	if (piline == nullptr)

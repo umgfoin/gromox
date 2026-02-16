@@ -125,13 +125,12 @@ static void t_card()
 
 static int t_ical_api()
 {
-	int hour = -99, min = -99;
-	assert(ical_parse_utc_offset("+0100", &hour, &min));
-	assert(hour == -1 && min == 0);
-	assert(ical_parse_utc_offset("-0100", &hour, &min));
-	assert(hour == 1 && min == 0);
-	assert(!ical_parse_utc_offset("0100", &hour, &min));
-	assert(hour == 0 && min == 0);
+	int west = 0;
+	assert(simple_zone_to_minwest("+0100", &west, nullptr));
+	assert(west == -60);
+	assert(simple_zone_to_minwest("-0100", &west, nullptr));
+	assert(west == 60);
+	assert(!simple_zone_to_minwest("0100", &west, nullptr));
 
 	ical_time it;
 	assert(it.assign_datetime("20231224T123456Z"));

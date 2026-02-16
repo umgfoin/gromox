@@ -905,12 +905,6 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 
 BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 {
-	int hour;
-	int minute;
-	int factor;
-	int zone_len;
-	time_t tmp_time;
-	char tmp_buff[3];
 	struct tm tmp_tm;
 	const char *str_zone;
 	
@@ -923,91 +917,10 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		str_zone = strptime(str_time, "%d %b %Y %H:%M:%S ", &tmp_tm);
 	if (str_zone == nullptr)
 		return FALSE;
-	
-	zone_len = strlen(str_zone);
-	if (zone_len >= 5) {
-		if (*str_zone == '-')
-			factor = 1;
-		else if (*str_zone == '+')
-			factor = -1;
-		else
-			return FALSE;
-		if (!HX_isdigit(str_zone[1]) || !HX_isdigit(str_zone[2]) ||
-		    !HX_isdigit(str_zone[3]) || !HX_isdigit(str_zone[4]))
-			return FALSE;
-
-		tmp_buff[0] = str_zone[1];
-		tmp_buff[1] = str_zone[2];
-		tmp_buff[2] = '\0';
-		hour = strtol(tmp_buff, nullptr, 10);
-		if (hour < 0 || hour > 23)
-			return FALSE;
-
-		tmp_buff[0] = str_zone[3];
-		tmp_buff[1] = str_zone[4];
-		tmp_buff[2] = '\0';
-		minute = strtol(tmp_buff, nullptr, 10);
-		if (minute < 0 || minute > 59)
-			return FALSE;
-	} else if (1 == zone_len) {
-		if ('A' <= str_zone[0] && 'J' > str_zone[0]) {
-			factor = 1;
-			hour = str_zone[0] - 'A' + 1;
-			minute = 0;
-		} else if ('J' < str_zone[0] && 'M' >= str_zone[0]) {
-			factor = 1;
-			hour = str_zone[0] - 'A';
-			minute = 0;
-		} else if ('N' <= str_zone[0] && 'Y' >= str_zone[0]) {
-			factor = -1;
-			hour = str_zone[0] - 'N' + 1;
-			minute = 0;
-		} else if ('Z' == str_zone[0]) {
-			factor = 1;
-			hour = 0;
-			minute = 0;
-		} else {
-			return FALSE;
-		}
-	} else if (2 == zone_len || 3 == zone_len) {
-		if (0 == strcmp("UT", str_zone) ||
-			0 == strcmp("GMT", str_zone)) {
-			factor = 1;
-			hour = 0;
-			minute = 0;
-		} else if (0 == strcmp("EDT", str_zone)) {
-			factor = 1;
-			hour = 4;
-			minute = 0;
-		} else if (0 == strcmp("EST", str_zone) ||
-			0 == strcmp("CDT", str_zone)) {
-			factor = 1;
-			hour = 5;
-			minute = 0;
-		} else if (0 == strcmp("CST", str_zone) ||
-			0 == strcmp("MDT", str_zone)) {
-			factor = 1;
-			hour = 6;
-			minute = 0;
-		} else if (0 == strcmp("MST",  str_zone) ||
-			0 == strcmp("PDT", str_zone)) {
-			factor = 1;
-			hour = 7;
-			minute = 0;
-		} else if (0 == strcmp("PST", str_zone)) {
-			factor = 1;
-			hour = 8;
-			minute = 0;
-		} else {
-			return FALSE;
-		}
-	} else {
+	int west = 0;
+	if (!rfc822_zone_to_minwest(str_zone, &west, nullptr))
 		return FALSE;
-	}
-	
-	tmp_time = timegm(&tmp_tm);
-	tmp_time += factor*(60*60*hour + 60*minute);
-	*ptime = tmp_time;
+	*ptime = timegm(&tmp_tm) + 60 * west;
 	return TRUE;
 }
 

@@ -1253,6 +1253,91 @@ std::vector<std::string> gx_split_ws(std::string_view sv)
 	return out;
 }
 
+/**
+ * Parses "Z" or "±HHMM" into minutes west of GMT.
+ * Returns a bool indicating whether a zone was recognized.
+ */
+bool simple_zone_to_minwest(const char *s, int *west, char **end)
+{
+	if (s[0] == 'Z' && s[1] == '\0') {
+		if (end != nullptr)
+			*end = deconst(s + 1);
+		*west = 0;
+		return true;
+	} else if (s[0] != '+' && s[0] != '-') {
+		if (end != nullptr)
+			*end = deconst(s);
+		return false;
+	} else if (!HX_isdigit(s[1]) || !HX_isdigit(s[2]) || !HX_isdigit(s[3]) || !HX_isdigit(s[4])) {
+		if (end != nullptr)
+			*end = deconst(s);
+		return false;
+	}
+	int min = (s[4] - '0') + (s[3] - '0') * 10 +
+		  (s[2] - '0') * 60 + (s[1] - '0') * 600;
+	*west = s[0] == '-' ? min : -min;
+	if (end != nullptr)
+		*end = deconst(s + 5);
+	return true;
+}
+
+/**
+ * Parses a zone, supports the archaic RFC 822 zone labels.
+ */
+bool rfc822_zone_to_minwest(const char *s, int *west, char **end)
+{
+	if (s[0] == '+' || s[0] == '-')
+		return simple_zone_to_minwest(s, west, end);
+	if (s[0] == 'Z' && s[1] == '\0') {
+		*west = 0;
+		if (end != nullptr)
+			*end = deconst(&s[1]);
+		return true;
+	}
+	/* these are the Sandford Fleming timezone labels */
+	if (s[0] >= 'A' && s[0] <= 'I' && s[1] == '\0') {
+		*west = 60 * (s[0] - 'A' + 1);
+		if (end != nullptr)
+			*end = deconst(&s[1]);
+		return true;
+	} else if (s[0] >= 'K' && s[0] <= 'M' && s[1] == '\0') {
+		*west = 60 * (s[0] - 'K' + 10);
+		if (end != nullptr)
+			*end = deconst(&s[1]);
+		return true;
+	} else if (s[0] >= 'N' && s[0] <= 'Y' && s[1] == '\0') {
+		*west = -60 * static_cast<int>(s[0] - 'N' + 1);
+		if (end != nullptr)
+			*end = deconst(&s[1]);
+		return true;
+	}
+	/* Also obsoleted: magic fixed strings */
+	static constexpr struct zmap_entry {
+		char name[4]{};
+		int west = 0;
+	} zmap[] = {
+		{"UT", 0},
+		{"GMT", 0},
+		{"EST", 5*60},
+		{"EDT", 4*60},
+		{"CST", 6*60},
+		{"CDT", 5*60},
+		{"MST", 7*60},
+		{"MDT", 6*60},
+		{"PST", 8*60},
+		{"PDT", 7*60},
+	};
+	for (const auto &row : zmap) {
+		if (strcmp(s, row.name) != 0)
+			continue;
+		*west = row.west;
+		if (end != nullptr)
+			*end = deconst(&s[strlen(s)]);
+		return true;
+	}
+	return false;
+}
+
 }
 
 int XARRAY::append(MITEM &&ptr, unsigned int tag) try
