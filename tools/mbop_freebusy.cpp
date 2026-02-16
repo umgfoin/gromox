@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2024–2025 grommunio GmbH
+// SPDX-FileCopyrightText: 2024–2026 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdio>
 #include <cstdlib>
@@ -24,26 +24,6 @@ static constexpr struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static bool zone_extract(const char *s, int *west, char **end)
-{
-	if (s[0] == 'Z' && s[1] == '\0') {
-		*end = deconst(s + 1);
-		*west = 0;
-		return true;
-	} else if (s[0] != '+' && s[0] != '-') {
-		*end = deconst(s);
-		return false;
-	} else if (!HX_isdigit(s[1]) || !HX_isdigit(s[2]) || !HX_isdigit(s[3]) || !HX_isdigit(s[4])) {
-		*end = deconst(s);
-		return false;
-	}
-	int min = (s[4] - '0') + (s[3] - '0') * 10 +
-		  (s[2] - '0') * 60 + (s[1] - '0') * 600;
-	*west = s[0] == '-' ? min : -min;
-	*end = deconst(s + 5);
-	return true;
-}
-
 static int xmktime(const char *str, time_t *out)
 {
 	char *end = nullptr;
@@ -60,7 +40,7 @@ static int xmktime(const char *str, time_t *out)
 	int min_west = 0;
 	bool has_zone = false;
 	if (end != nullptr)
-		has_zone = zone_extract(end, &min_west, &end);
+		has_zone = simple_zone_to_minwest(end, &min_west, &end);
 	if (end != nullptr && *end != '\0') {
 		mbop_fprintf(stderr, "Don't know what to do with: \"%s\". Remove it.\n", end);
 		return -1;

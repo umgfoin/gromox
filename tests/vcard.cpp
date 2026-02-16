@@ -125,13 +125,12 @@ static void t_card()
 
 static int t_ical_api()
 {
-	int hour = -99, min = -99;
-	assert(ical_parse_utc_offset("+0100", &hour, &min));
-	assert(hour == -1 && min == 0);
-	assert(ical_parse_utc_offset("-0100", &hour, &min));
-	assert(hour == 1 && min == 0);
-	assert(!ical_parse_utc_offset("0100", &hour, &min));
-	assert(hour == 0 && min == 0);
+	int west = 0;
+	assert(simple_zone_to_minwest("+0100", &west, nullptr));
+	assert(west == -60);
+	assert(simple_zone_to_minwest("-0100", &west, nullptr));
+	assert(west == 60);
+	assert(!simple_zone_to_minwest("0100", &west, nullptr));
 
 	ical_time it;
 	assert(it.assign_datetime("20231224T123456Z"));
@@ -175,8 +174,10 @@ static int t_ical_api()
 	assert(sec == 0);
 	assert(ical_parse_duration("-P9DT3H4M5S", &sec));
 	assert(sec == -(86400 * 9 + 3600 * 3 + 4 * 60 + 5));
-	assert(!ical_parse_duration("P1M", &sec));
-	assert(!ical_parse_duration("P1Y", &sec));
+	assert(ical_parse_duration("P1M", &sec));
+	assert(sec >= 28 * 86400 && sec <= 86400 * 366 / 12);
+	assert(ical_parse_duration("P1Y", &sec));
+	assert(sec >= 86400 * 365 && sec <= 86400 * 366);
 	/*
 	 * Parser is too lax.
 	//assert(!ical_parse_duration("P", &sec));

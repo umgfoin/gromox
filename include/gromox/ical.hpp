@@ -145,7 +145,6 @@ struct GX_EXPORT ical_rrule {
 	unsigned char nsetpos_bitmap[46];
 };
 
-extern GX_EXPORT bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute);
 extern GX_EXPORT unsigned int ical_get_dayofweek(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_dayofyear(unsigned int year, unsigned int month, unsigned int day);
 extern GX_EXPORT unsigned int ical_get_monthdays(unsigned int year, unsigned int month);

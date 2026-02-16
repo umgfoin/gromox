@@ -171,5 +171,7 @@ static inline size_t utf16_to_utf8_xlen(size_t z) { return z / 2 * 3 + 1; }
 static inline size_t utf16_to_utf8_len(size_t z) { return utf16_to_utf8_xlen(z) + 1; }
 
 extern GX_EXPORT const uint8_t utf8_byte_num[256];
+extern GX_EXPORT bool simple_zone_to_minwest(const char *s, int *west, char **end);
+extern GX_EXPORT bool rfc822_zone_to_minwest(const char *s, int *west, char **end);
 
 }
