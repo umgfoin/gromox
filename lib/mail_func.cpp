@@ -939,14 +939,14 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		tmp_buff[0] = str_zone[1];
 		tmp_buff[1] = str_zone[2];
 		tmp_buff[2] = '\0';
-		hour = strtol(tmp_buff, nullptr, 0);
+		hour = strtol(tmp_buff, nullptr, 10);
 		if (hour < 0 || hour > 23)
 			return FALSE;
 
 		tmp_buff[0] = str_zone[3];
 		tmp_buff[1] = str_zone[4];
 		tmp_buff[2] = '\0';
-		minute = strtol(tmp_buff, nullptr, 0);
+		minute = strtol(tmp_buff, nullptr, 10);
 		if (minute < 0 || minute > 59)
 			return FALSE;
 	} else if (1 == zone_len) {

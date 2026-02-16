@@ -1,4 +1,4 @@
-Milestone 3.4.62
+Milestone 3.4.74
 ================
 
 Enhancements:
@@ -16,6 +16,7 @@ Fixes:
 * oxcical: upon reception of non-recurring appointments, the PidLidRecurring=0
   property will be set now, as some Outlook versions fail to show appointments
   in the daily/weekly/monthly view if the property is absent.
+* oxcmail: messages with timezones ±08xx/09xx were mistreated as UTC
 * exmdb: limit production of PR_RTF_COMPRESSED variants of
   PR_BODY/PR_HTML when saving messages to IPM.Task objects, as OL
   only depends on it for those message classes.
