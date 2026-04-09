@@ -79,29 +79,44 @@ void xtransaction::teardown()
 {
 	if (m_db == nullptr)
 		return;
-	if (sqlite3_txn_state(m_db, "main") == SQLITE_TXN_WRITE) {
+	auto tx_state = sqlite3_txn_state(m_db, "main");
+	if (tx_state  == SQLITE_TXN_WRITE) {
 		auto fn = sqlite_unique_name(m_db);
 		std::unique_lock lk(active_xa_lock);
 		active_xa.erase(fn);
 	}
-	if (gx_sql_exec(m_db, "ROLLBACK") != SQLITE_OK)
-		/* ignore */;
+	if (tx_state != SQLITE_TXN_NONE) {
+		if (gx_sql_exec(m_db, "ROLLBACK") != SQLITE_OK)
+			/* ignore */;
+	} else
+	  	mlog(LV_DEBUG, "[T%lu] xtransaction::teardown(%p, %s): Skipping rollback - no transaction is active at [%s]",
+                        gx_gettid(), m_db,
+                        sqlite_unique_name(m_db).c_str(),
+                        simple_backtrace().c_str());
 }
 
 int xtransaction::commit()
 {
 	if (m_db == nullptr)
 		return SQLITE_OK;
-	bool is_write = sqlite3_txn_state(m_db, "main") == SQLITE_TXN_WRITE;
+	auto tx_state = sqlite3_txn_state(m_db, "main");
+	if (tx_state == SQLITE_TXN_NONE) {
+		mlog(LV_DEBUG, "[T%lu] xtransaction::commit(%p, %s): Skipping commit - no transaction is active at [%s]",
+                        gx_gettid(), m_db,
+                        sqlite_unique_name(m_db).c_str(),
+                        simple_backtrace().c_str());
+		m_db = nullptr;
+        	return SQLITE_OK;
+	}
 	auto ret = gx_sql_exec(m_db, "COMMIT TRANSACTION");
 	/* On error, it stays active and needs to be explicitly terminated. */
 	if (ret != SQLITE_OK)
 		/*
-		 * Leave m_db set so that ~xtransaction (executed in the
-		 * caller) will lead to a ROLLBACK.
-		 */
+	 	* Leave m_db set so that ~xtransaction (executed in the
+	 	* caller) will lead to a ROLLBACK.
+	 	*/
 		return ret;
-	if (is_write) {
+	if (tx_state == SQLITE_TXN_WRITE) {
 		auto fn = sqlite_unique_name(m_db);
 		std::unique_lock lk(active_xa_lock);
 		active_xa.erase(fn);
