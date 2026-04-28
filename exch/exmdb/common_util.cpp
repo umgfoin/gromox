@@ -4727,7 +4727,7 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	if (link(old_eml.c_str(), new_eml.c_str()) < 0) {
 		int se = errno;
 		if (errno != ENOENT)
-			mlog(LV_ERR, "E-5310: link %s -> %s: %s",
+			mlog(LV_NOTICE, "E-5310: link %s -> %s: %s",
 				old_eml.c_str(), new_eml.c_str(), strerror(errno));
 		return se;
 	}
@@ -4741,7 +4741,7 @@ static errno_t copy_eml_ext(const char *old_midstr, std::string &new_midstr) try
 	if (link(old_ext.c_str(), new_ext.c_str()) < 0) {
 		int se = errno;
 		if (errno != ENOENT)
-			mlog(LV_ERR, "E-5311: link %s -> %s: %s",
+			mlog(LV_NOTICE, "E-5311: link %s -> %s: %s",
 				old_ext.c_str(), new_ext.c_str(), strerror(errno));
 		return se;
 	}
